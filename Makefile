@@ -18,10 +18,10 @@ INCDIRS = -I/usr/include
 LDLIBS =  -lglut -lGL -lGLU -lX11 -lm
 
 .c:
-        $(CC)  $@.c $(INCDIRS) $(LIBDIRS) $(LDLIBS) -o $@
+	$(CC)  $@.c $(INCDIRS) $(LIBDIRS) $(LDLIBS) -o $@
 
 .cpp:
-        $(C++)  -O $@.cpp -g $(INCDIRS) $(LIBDIRS) $(LDLIBS) -o $@
+	$(C++)  -O $@.cpp -g $(INCDIRS) $(LIBDIRS) $(LDLIBS) -o $@
                                                                                                                                                                                                              
                                                                                                                                                                                                     
 "Makefile" 25L, 537C                                                                                                                                                                             21,2-9        All
