@@ -1,9 +1,15 @@
 // An OpenGL Polygon Drawer Program
 
 #include <stdio.h>
-#include <OpenGL/gl.h>
-#include <OpenGl/glu.h>
-#include <GLUT/glut.h>
+
+//Header for linux
+#include <GL/glut.h>
+
+//Headers for Mac  
+//#include <OpenGL/gl.h>
+//#include <OpenGl/glu.h>
+//#include <GLUT/glut.h>
+//End headers for Mac 
 #include <stdlib.h>
 #include <vector>
 using namespace std;
