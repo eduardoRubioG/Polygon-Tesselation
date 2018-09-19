@@ -1,17 +1,13 @@
+
 // An OpenGL Polygon Drawer Program
 
 #include <stdio.h>
-
-//Header for linux
-#include <GL/glut.h>
-
-//Headers for Mac  
-//#include <OpenGL/gl.h>
-//#include <OpenGl/glu.h>
-//#include <GLUT/glut.h>
-//End headers for Mac 
+#include <OpenGL/gl.h>
+#include <OpenGl/glu.h>
+#include <GLUT/glut.h>
 #include <stdlib.h>
 #include <vector>
+#include "GraphxMath.h"
 using namespace std;
 
 
@@ -138,6 +134,12 @@ void newPoint( int x, int y )
     glFlush();
 }
 
+bool polygonIntersect( ){
+    //test case will be line segment <last head value in POLYGON_POINTS> --> <new mouse point>
+    //                                vs. all lines
+    //                                  for( int x = 0; x < size()-1; x++)
+    return true; 
+}
 
 void closePolygon( int x, int y )
 {
@@ -194,13 +196,20 @@ void keyboard( unsigned char key, int x, int y )
 }
 
 
+
 int main(int argc, char** argv)
 {
     
-    myglutInit(argc,argv); /* Set up Window */
+    myglutInit(argc,argv); //Set up Window
     myInit(); /* set attributes */
     
+    
     // Now start the standard OpenGL glut callbacks //
+    double p1[]={-7,-1};
+    double q1[]={8,3};
+    double p2[]={-2,1};
+    double q2[]={-1,-2};
+   cout <<  doesIntersect(p1, q1, p2, q2) << endl;
     
     glutMouseFunc(mouse);  /* Define Mouse Handler */
     glutKeyboardFunc(keyboard); /* Define Keyboard Handler */
