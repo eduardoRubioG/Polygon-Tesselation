@@ -2,9 +2,18 @@
 // An OpenGL Polygon Drawer Program
 
 #include <stdio.h>
+
+//Linux headers 
+#include <GL/glut.h>
+
+//Mac headers 
+/*
 #include <OpenGL/gl.h>
 #include <OpenGl/glu.h>
 #include <GLUT/glut.h>
+*/
+
+
 #include <stdlib.h>
 #include <vector>
 #include "GraphxMath.h"
