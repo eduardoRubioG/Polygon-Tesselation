@@ -1,19 +1,14 @@
 
 // An OpenGL Polygon Drawer Program
-
 #include <stdio.h>
-
 //Linux headers 
 #include <GL/glut.h>
-
 //Mac headers 
 /*
 #include <OpenGL/gl.h>
 #include <OpenGl/glu.h>
 #include <GLUT/glut.h>
 */
-
-
 #include <stdlib.h>
 #include <vector>
 #include "GraphxMath.h"
@@ -49,7 +44,18 @@ const float WORLD_COORDINATE_MAX_Y = 800.0;
      
  };
 
+struct triangle {
+    
+    polPoint p;
+    polPoint q;
+    polPoint r;
+    
+};
+
 vector<polPoint> POLYGON_POINTS;
+vector<polPoint> T_POLYGON_POINTS;
+vector<triangle> TRIANGLES;
+
 
 void myglutInit( int argc, char** argv )
 {
@@ -201,13 +207,153 @@ void newPoint( int x, int y )
     }
 }//End of newPoint function
 
+/*
+ ============================   TESSELATION BLOCK BEGINS   ==================================
+*/
 
+//Return bool representing whether or not the polygon was drawn in clock-wise fashion by the user
+//  Useful for knowing whether or not polygon list will need to be flipped in order to tesselate
+bool drawnClockWise( ) {
+    
+    double sum = 0;
+    for( int x = 0; x < POLYGON_POINTS.size(); x++ ) {
+        
+        double x1 = POLYGON_POINTS[ x ].headPoint[0];
+        double y1 = POLYGON_POINTS[ x ].headPoint[1];
+        double x2 = POLYGON_POINTS[ x + 1].headPoint[0];
+        double y2 = POLYGON_POINTS[ x + 1].headPoint[1];
+        
+        //Last sum will be of last point in vector and original point
+        if( x+1 == POLYGON_POINTS.size() ) {
+             x2 = POLYGON_POINTS[ 0 ].headPoint[0];
+             y2 = POLYGON_POINTS[ 0 ].headPoint[1];
+        }
+        
+        sum += ( x2 - x1 ) * ( y2 + y1 );
+    }
+    
+    //If sum is positive then polygon was drawn clockwise
+    //and polygon points will need to be flipped
+    if( sum > 0 ) return true;
+    else         return false;
+}
+
+//This function will return a new vector that is the inverse of the original input vector.
+//  Function will be used when user drew a polygon in clockwise fashion so that tesselation
+//  can happen in counterclockwise fashion
+vector<polPoint> flipPolygonPoints( vector<polPoint> originalVec ){
+    
+    vector<polPoint> newVec;
+    
+    while ( !originalVec.empty() ) {
+        newVec.push_back( originalVec[ originalVec.size()-1 ]);
+        originalVec.pop_back();
+    }
+    
+    return newVec;
+}
+
+bool finishedPolygonIntersect( int firstPointIndex, int secondPointIndex, vector<polPoint> untouchedPoints ) {
+    
+    //1.    Check if point a, middle point, and point b are counterclockwise
+    //      If counterclockwise proceed to next step. If not, report intersection
+    
+    //      1.a. function orientation returns:
+    //              2 if points are CCW
+    //              1 if points are CW
+    //              0 if points are colinear :: this should not be a problem since this should be checked for when drawing the polygon
+    if( orientation( untouchedPoints[ firstPointIndex ].headPoint,
+                    untouchedPoints[ firstPointIndex + 1 ].headPoint,
+                    untouchedPoints[ secondPointIndex ].headPoint) != 2 )
+        return true;
+    
+    //2.    Check to see if segment points a-->b intersect with any lines from the polygon
+    //      If they do intersect, make sure they are not adjacent lines
+   
+    
+    for( int x = 0; x < untouchedPoints.size(); x++ ){
+        
+        //Check if line segments in question are adjacent
+        if( x != firstPointIndex && x + 1 != firstPointIndex &&
+            x != secondPointIndex && x + 1 != secondPointIndex )
+            
+              //Lines are not adjacent, so check for intersection
+              if (  doesIntersect(  untouchedPoints[ x ].headPoint,
+                                   untouchedPoints[ x + 1 ].headPoint,
+                                   untouchedPoints[ firstPointIndex ].headPoint,
+                                   untouchedPoints[ secondPointIndex ].headPoint) )
+                  return true;
+    }
+    //No intersection was found
+    return false;
+}
+
+void tesselate( ) {
+   
+    vector<polPoint> untouchedPoints;
+    vector<polPoint> touchedPoints;
+    
+    //If polygon was drawn clockwise, then flip the polygon points into the T_POLY list
+    if( drawnClockWise() )
+        T_POLYGON_POINTS = flipPolygonPoints( POLYGON_POINTS ) ;
+    else
+        T_POLYGON_POINTS = POLYGON_POINTS;
+    untouchedPoints = T_POLYGON_POINTS;
+
+        
+        for( int x = 0; untouchedPoints.size(); x++ ){
+            
+            //Continue tesselating until there remains only 3 points as that will be the final triangle
+            if ( untouchedPoints.size() == 3){
+                triangle t;
+                t.p = untouchedPoints[0];
+                t.q = untouchedPoints[1];
+                t.r = untouchedPoints[2];
+                TRIANGLES.push_back( t );
+                break; //add remaining 3 points to triangle vector
+            }
+            
+            if( !finishedPolygonIntersect( x , x + 2, untouchedPoints) ) {// point x and x+2 do not have an intersection
+                
+                //Draw line from point x and x+2
+                glBegin(GL_LINES);
+                glColor3f(1.0f, 0.0f, 1.0f);
+                glVertex2d(untouchedPoints[ x ].headPoint[ 0 ], untouchedPoints[ x ].headPoint[ 1 ]);
+                glVertex2d(untouchedPoints[ x+2 ].headPoint[ 0 ], untouchedPoints[ x+2 ].headPoint[ 1 ]);
+                glEnd();
+                glFlush();
+                
+                //Add point x, x+1, x+2 to the triangle list
+                triangle t;
+                t.p = untouchedPoints[x];
+                t.q = untouchedPoints[x+1];
+                t.r = untouchedPoints[x+2];
+                TRIANGLES.push_back( t );
+                
+                //Remove point x+1 from untouched points to touchedPoints
+                touchedPoints.push_back( untouchedPoints[ x + 1 ] );
+                untouchedPoints.erase( untouchedPoints.begin() + x + 1 );
+                
+                //Return x to 0 to continue ear-clipping algorithm
+                x = 0;
+            }
+            
+            //If there is an intersection, the for loop itself will continue the tesselation algorithm
+        
+    }//end of for-loop
+}
+
+/*
+ ============================   TESSELATION BLOCK ENDING   ==================================
+*/
 //Clears the screen and polygon points if user wants to restart drawing
 void clearScreen( ) {
     
     CAN_CONTINUE_DRAWING=true;
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     POLYGON_POINTS.clear();
+    T_POLYGON_POINTS.clear();
+    TRIANGLES.clear();
     glFlush();
 
 }
@@ -278,6 +424,7 @@ void keyboard( unsigned char key, int x, int y )
 {
     if ( key == 'q' || key == 'Q' ) exit(0);
     if ( key == 'c' || key == 'C' ) clearScreen();
+    if ( key == 't' || key == 'T' ) tesselate();
 }
 
 
@@ -290,6 +437,12 @@ int main(int argc, char** argv)
     
     
     // Now start the standard OpenGL glut callbacks //
+    double p[]={0,1};
+    double q[]={2,0};
+    double r[]={4,2};
+
+    cout <<  orientation(p, q, r) << endl;
+    
     glutMouseFunc(mouse);  /* Define Mouse Handler */
     glutKeyboardFunc(keyboard); /* Define Keyboard Handler */
     glutDisplayFunc(display); /* Display callback invoked when window opened */
