@@ -19,15 +19,18 @@ public:
                    std::vector<Object> const& resultingVector );
     bool doesIntersect( Object const p1[], Object const q1[], /*Algorithm from GeeksforGeeks*/
                        Object const p2[], Object const q2[]  );
+    int orientation( Object const p[],
+                     Object const q[],
+                     Object const r[] );
+    double getAngle( Object const p[], Object const q[], Object const r[] );
+    bool doesExitPolygon( Object const p[], Object const q[], Object const r[] ); 
 
 private:
     bool onSegment( Object const p[],
                     Object const q[],
                     Object const r[] ); /*For doesIntersect function*/
     
-    int orientation( Object const p[],
-                     Object const q[],
-                     Object const r[] );/*For doesIntersectfunction*/
+
   
 };
 
