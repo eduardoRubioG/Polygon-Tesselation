@@ -2,13 +2,19 @@
 // An OpenGL Polygon Drawer Program
 
 #include <stdio.h>
+
+//Linux Headers
+/*
+#include <GL/glut.h>
+*/
+//Mac headers
 #include <OpenGL/gl.h>
 #include <OpenGl/glu.h>
 #include <GLUT/glut.h>
+
 #include <stdlib.h>
 #include <vector>
 #include "GraphxMath.h"
-//#include "DoubleLinkedList.h"
 
 using namespace std;
 
@@ -327,6 +333,10 @@ void tesselate( ) {
     }
     
     for( int x = 0; x < untouchedPoints.size(); x++ ){
+        
+        int xPlusOne = (x+1)%untouchedPoints.size();
+        int xPlusTwo = (x+2)%untouchedPoints.size();
+        
         cout << "TESSELATE RUN: " << x << endl;
         cout << "UNTOUCHED POINTS: " << untouchedPoints.size() << endl;
         //Continue tesselating until there remains only 3 points as that will be the final triangle
@@ -339,29 +349,35 @@ void tesselate( ) {
             break; //add remaining 3 points to triangle vector
         }
         
-        if( !finishedPolygonIntersect( x , x + 2, untouchedPoints) ) {// point x and x+2 do not have an intersection
+        if( !finishedPolygonIntersect( x , xPlusTwo , untouchedPoints) ) {// point x and x+2 do not have an intersection
             
             //Draw line from point x and x+2
             glBegin(GL_LINES);
             glColor3f(1.0f, 0.0f, 1.0f);
             glVertex2d(untouchedPoints[ x ].headPoint[ 0 ], untouchedPoints[ x ].headPoint[ 1 ]);
-            glVertex2d(untouchedPoints[ x+2 ].headPoint[ 0 ], untouchedPoints[ x+2 ].headPoint[ 1 ]);
+            glVertex2d(untouchedPoints[ xPlusTwo ].headPoint[ 0 ], untouchedPoints[ xPlusTwo ].headPoint[ 1 ]);
             glEnd();
             glFlush();
             
             //Add point x, x+1, x+2 to the triangle list
             triangle t;
             t.p = untouchedPoints[x];
-            t.q = untouchedPoints[x+1];
-            t.r = untouchedPoints[x+2];
+            t.q = untouchedPoints[ xPlusOne ];
+            t.r = untouchedPoints[xPlusTwo];
             TRIANGLES.push_back( t );
             
             //Remove point x+1 from untouched points
-            if( x + 1 == untouchedPoints.size())
+            /*if( x + 1 == untouchedPoints.size())
                 untouchedPoints.erase(untouchedPoints.end());
             else
                 untouchedPoints.erase( untouchedPoints.begin() + x + 1 );
-            cout << "Untouched polygon size: " << untouchedPoints.size() << endl; 
+            cout << "Untouched polygon size: " << untouchedPoints.size() << endl;*/
+            
+            //Remove the 'ear' point of the triangle from considered tesselation points 
+            //auto last = remove(untouchedPoints.begin(), untouchedPoints.end(), untouchedPoints[xPlusOne]);
+            //untouchedPoints.erase(last, untouchedPoints.end());
+            
+            untouchedPoints.erase( untouchedPoints.begin() + xPlusOne );
             
             //Return x to 0 to continue ear-clipping algorithm
             cout << "Resetting x" << endl;
