@@ -10,6 +10,7 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
+#include <math.h>
 
 /*
  PRE-CONDITION:
@@ -71,6 +72,7 @@ template<class Object>
 int orientation( Object const p[],
                  Object const q[],
                  Object const r[] ) {
+    
     int val = (q[1] - p[1]) * (r[0] - q[0]) -
                 (q[0] - p[0]) * (r[1] - q[1]);
     
@@ -89,7 +91,7 @@ int orientation( Object const p[],
 
 /*
  PRE-CONDITION:
- Input two vectors representing
+ Input four points to check whether their line segments intersect
 */
 template <class Object> //POLYGON_POINTS[3].headPoint
 bool doesIntersect( Object const p1[], Object const q1[], /*Algorithm from GeeksforGeeks*/
@@ -122,10 +124,36 @@ bool doesIntersect( Object const p1[], Object const q1[], /*Algorithm from Geeks
     return false; // Doesn't fall in any of the above cases
 }
 /*
+ POST-CONDITION:
+ Return true if there is intersection and false if there is none 
  */
 
-
-
+/*
+ PRE-CONDITION:
+ Gets the angle between two vectors. Just input the two vector points
+*/
+template <class Object>
+double getAngle(  Object const P[], Object const Q[], Object const R[] ) {
+    
+    //Create the 3 points into two vectors
+    double PQ[] = { (double) Q[0]-P[0], (double) Q[1]-P[1] };//Create vector PQ
+    double QR[] = { (double) R[0]-Q[0], (double) R[1]-Q[1] };//Create vector QR
+    
+    //Calculate values needed for the angle calculation
+    double dotProduct = PQ[0]*QR[0] + PQ[1]*QR[1];
+    double PQmagnitude = sqrt( PQ[0]*PQ[0] + PQ[1]*PQ[1] );
+    double QRmagnitude = sqrt( QR[0]*QR[0] + QR[1]*QR[1] );
+    
+    //Solve
+    double angleInRadians = acos( dotProduct / (PQmagnitude*QRmagnitude) );
+    
+    //Converts from radians to degrees
+    return ( (180 * angleInRadians) / M_PI ) ;
+}
+/*
+ POST-CONDITION:
+ Returns double representing angle between two line segments in the form of degrees
+*/
 
 
 
