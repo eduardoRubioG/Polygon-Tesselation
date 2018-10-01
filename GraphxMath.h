@@ -23,7 +23,9 @@ public:
                      Object const q[],
                      Object const r[] );
     double getAngle( Object const p[], Object const q[], Object const r[] );
-    bool doesExitPolygon( Object const p[], Object const q[], Object const r[] ); 
+    bool doesExitPolygon( Object const p[], Object const q[], Object const r[] );
+    bool isAdjacent( Object x, Object xPlusOne, Object firstPointIndex, Object secondPointIndex);
+    void  midpoint( Object const p[], Object const q[], double midpointArray[]); 
 
 private:
     bool onSegment( Object const p[],
