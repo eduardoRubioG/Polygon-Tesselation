@@ -10,6 +10,7 @@
 #       xxxx.c is the name of the file you wish to compile 
 #       
 # A binary named xxxx will be produced
+# Eduardo Rubio 
 
 CC = gcc
 C++ = g++
