@@ -1,4 +1,5 @@
 // An OpenGL Polygon Drawer Program
+// Started by Eduardo Rubio on 9/18/18
 #include <stdio.h>
 //Linux Headers
 /*
