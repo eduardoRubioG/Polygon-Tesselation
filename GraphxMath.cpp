@@ -155,33 +155,24 @@ double getAngle(  Object const P[], Object const Q[], Object const R[] ) {
  Returns double representing angle between two line segments in the form of degrees
 */
 
+/**
+ *Checks to see if two line segments are adjacents
+ */
+template <class Object>
+bool isAdjacent( Object x, Object xPlusOne, Object firstPointIndex, Object secondPointIndex) {
+    
+    if ( x != firstPointIndex && xPlusOne != firstPointIndex &&
+        x != secondPointIndex && xPlusOne != secondPointIndex )
+        return false;
+    
+    return true;
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+/**
+ *Given two points, return the midpoint 
+ */
+template <class Object>
+void midpoint( Object const p[], Object const q[], double midpointArray[]){
+    midpointArray[0] = (p[0] + q[0])/2;
+    midpointArray[1] = (p[1] + q[1])/2;
+}
