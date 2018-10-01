@@ -1,9 +1,8 @@
 //
 //  GraphxMath.cpp
-//  LbsProject
+//  LbsProject 1 - PolygonWiz
 //
 //  Created by Eduardo Rubio on 9/18/18.
-//  Copyright © 2018 Eduardo Rubio. All rights reserved.
 //
 
 #include "GraphxMath.h"
