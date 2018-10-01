@@ -1,8 +1,5 @@
-
 // An OpenGL Polygon Drawer Program
-
 #include <stdio.h>
-
 //Linux Headers
 /*
 #include <GL/glut.h>
@@ -11,40 +8,33 @@
 #include <OpenGL/gl.h>
 #include <OpenGl/glu.h>
 #include <GLUT/glut.h>
-
+//
 #include <stdlib.h>
 #include <vector>
 #include "GraphxMath.h"
-
 using namespace std;
 
-
 // These are defined in a global scope
-
 GLubyte red, green, blue;
 int COLORS_DEFINED;
-bool CAN_CONTINUE_DRAWING = true;
+bool CAN_CONTINUE_DRAWING = true; //Global boolean that dictates whether user can continue drawing lines or not
 
 // Specity the values to place and size the window on the screen
-
 const int WINDOW_POSITION_X = 100;
 const int WINDOW_POSITION_Y = 100;
 const int WINDOW_MAX_X = 800;
 const int WINDOW_MAX_Y = 800;
 
 // Specify the coordinate ranges for the world coordinates in the 2D Frame
-
 const float WORLD_COORDINATE_MIN_X = 0.0;
 const float WORLD_COORDINATE_MAX_X = 800.0;
 const float WORLD_COORDINATE_MIN_Y = 0.0;
 const float WORLD_COORDINATE_MAX_Y = 800.0;
 
 //A struct declaration to use throughout the project
-
  struct polPoint{
      
-     double tailPoint[2]; //Saves (x,y) of line origin
-     double headPoint[2]; //Saves (x,y) of line end
+     double point[2]; //Saves (x,y) of line end
      
  };
 
@@ -56,9 +46,9 @@ struct triangle {
     
 };
 
-vector<polPoint> POLYGON_POINTS;
-vector<polPoint> T_POLYGON_POINTS;
-vector<triangle> TRIANGLES;
+vector<polPoint> POLYGON_POINTS; //Main container for all polygon points. Global scope for all functions
+vector<polPoint> T_POLYGON_POINTS;//Main container for tesselated points. Global scope for all functions
+vector<triangle> TRIANGLES;//Main container for triangles post-tesselation. Global scope for all functions.
 
 
 void myglutInit( int argc, char** argv )
@@ -74,15 +64,13 @@ void myInit(void)
 {
     
     /* standard OpenGL attributes */
-    
-    glClearColor(1.0, 1.0, 1.0, 1.0); /* white background */
+    glClearColor(0.0, 0.0, 0.0, 0.0); /* white background */
     glColor3f(1.0, 0.0, 0.0); /* draw in red */
     glPointSize(2.0);
     
     COLORS_DEFINED = 0;
     
     /* set up viewing window with origin lower left */
-    
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     gluOrtho2D(WORLD_COORDINATE_MIN_X, WORLD_COORDINATE_MAX_X,
@@ -90,147 +78,122 @@ void myInit(void)
     glMatrixMode(GL_MODELVIEW);
 }
 
-
-void display( void )
-{
-    
-    /* define a point data type */
-    
-    typedef GLfloat point[2];
-    
-    point p; /* A point in 2-D space */
-    
-    glClear(GL_COLOR_BUFFER_BIT);  /*clear the window */
-    
-    if (!COLORS_DEFINED) {
-        red   = 255;
-        green = 0;
-        blue  = 0;
-    }
-    
-    glColor3ub( red, green, blue );
-    
-    glFlush(); /* clear buffers */
-    
+/**
+ *Invoked when opening window
+ */
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT);
+    glFlush();
 }
 
-// Test whether or not a point intersects with any points of the existing polygon
+/**
+ * Prints polPoints contained in vector
+ */
+void printPolPointVectors( vector<polPoint> v ) {
+    for( int x  = 0; x < v.size(); x++ )
+    {
+        cout << "V" << x << " (" << v[x].point[0] << ", " << v[x].point[1] << ")  --  ";
+    }
+    cout << "\n\n" ;
+}
+
+/**
+ * Draw line between specified points
+ */
+void drawLine( polPoint firstPoint, polPoint secondPoint ) {
+    glBegin(GL_LINES);
+    glColor3f(1.0f, 1.0f, 1.0f);
+    glVertex2d(firstPoint.point[0], firstPoint.point[1]);
+    glVertex2d(secondPoint.point[0], secondPoint.point[1]);
+    glEnd();
+    glFlush();
+}
+
+/**
+ * Test whether or not a point intersects with any points of the existing polygon
+ */
 bool polygonIntersect( double x, double y ){
 
-    //Create a temporary point value for the new point the user is trying to add
     double Prospective_New_Point[] = { x, y } ;
     
-    //Make sure we have appropriate points on the window before intersection checks need to happen
     if( POLYGON_POINTS.size() >= 3 ) {
-        for ( int iter = 0; iter < POLYGON_POINTS.size()-2; iter++ ) {
-            
-            if( doesIntersect( POLYGON_POINTS[ iter ].headPoint,
-                               POLYGON_POINTS[ iter+1].headPoint,
-                                POLYGON_POINTS[ POLYGON_POINTS.size() - 1].headPoint,
+        for ( int iter = 0; iter < POLYGON_POINTS.size()-2; iter++ )
+
+            if( doesIntersect( POLYGON_POINTS[ iter ].point,
+                               POLYGON_POINTS[ iter+1].point,
+                                POLYGON_POINTS[ POLYGON_POINTS.size() - 1].point,
                                 Prospective_New_Point ) == true )
-                return true; // end of nested if-statement
-            
-        }//end of for-loop
+                return true;
     }//end of main if-statement
     return false;
 }
 
-// Special intersection check for when the user attempts to close the polygon
-//  Modified to take into account that the closing line will be adjacent to the
-//  first segment in the polygon
+/**
+ * Modified version of intersection checks. Used for closing the polygon.
+ */
 bool closePolygonIntersect( double x, double y ){
     
-    //Create a temporary point value for the new point the user is trying to add
     double Prospective_New_Point[] = { x, y } ;
     
-    //Make sure we have appropriate points on the window before intersection checks need to happen
     if( POLYGON_POINTS.size() >= 3 ) {
-        for ( int iter = 1; iter < POLYGON_POINTS.size()-2; iter++ ) {
+        for ( int iter = 1; iter < POLYGON_POINTS.size()-2; iter++ )
             
-            if( doesIntersect( POLYGON_POINTS[ iter ].headPoint,
-                              POLYGON_POINTS[ iter+1].headPoint,
-                              POLYGON_POINTS[ POLYGON_POINTS.size() - 1].headPoint,
+            if( doesIntersect( POLYGON_POINTS[ iter ].point,
+                              POLYGON_POINTS[ iter+1].point,
+                              POLYGON_POINTS[ POLYGON_POINTS.size() - 1].point,
                               Prospective_New_Point ) == true )
-                return true; // end of nested if-statement
+                return true;
             
-        }//end of for-loop
-    }//end of main if-statement
+    }
     return false;
 }
 
-void newPoint( int x, int y )
-{
-    typedef GLfloat point[2];
-    point p;
+/**
+ * Called by user to draw new point/line on screen
+ */
+void newPoint( int x, int y ){
+
+    polPoint newPoint;
+    newPoint.point[0] = x;
+    newPoint.point[1] = y;
     
-    glColor3ub( red, green, blue );
-    
-    p[0] = x;
-    p[1] = y;
-    
-    if( POLYGON_POINTS.empty() ){//If no points have been drawn
+    //If first point has not been drawn
+    if( POLYGON_POINTS.empty() ){
+        glPointSize(2.0);
+        glBegin(GL_POINTS);
+        glVertex2d(x, y);
+        glEnd();
+        glFlush();
         
-        polPoint firstPoint;
-        firstPoint.headPoint[0] = x;
-        firstPoint.headPoint[1] = y;
-        POLYGON_POINTS.push_back(firstPoint);
+        POLYGON_POINTS.push_back(newPoint);
         
-    } else { //If there are points already drawn
-        
-            //Before drawing anything/adding a point into the PP vector, check to see if
-            //prospective point will intersect with the polygon
-        
-            if( polygonIntersect( x , y ) == false ) {
-            
-            //Commit point to the POLYGON_POINTS vector
-            polPoint point;
-            point.headPoint[0] = x;
-            point.headPoint[1] = y;//head index = vector.size()-1
-            point.tailPoint[0] = POLYGON_POINTS[ POLYGON_POINTS.size()-1 ].headPoint[0];//Connects x val from last point to this point
-            point.tailPoint[1] = POLYGON_POINTS[ POLYGON_POINTS.size()-1 ].headPoint[1];//Connects y val from last point to this point
-            
-            POLYGON_POINTS.push_back( point );
-            
-            //Draw line from last point to new user point
-            
-            glBegin(GL_LINES);
-            glColor3f(1.0f, 0.0f, 1.0f);
-            glVertex2d(point.tailPoint[0], point.tailPoint[1]);
-            glVertex2d(point.headPoint[0], point.headPoint[1]);
-            glEnd();
-                
-            //This code is optional (Just creates dots at line ends)
-            glBegin(GL_POINTS);
-            glVertex2fv(p);
-            glEnd();
-            glFlush();
-                
-            } else {//Simple message for command line when intersections occur. Maybe add text popup later???
-                cout << "INTERSECTION: TRY AGAIN" << endl;
-            }
-    }
-}//End of newPoint function
+    } else
+        if( !polygonIntersect( x , y ) ) {
+            drawLine( POLYGON_POINTS[ POLYGON_POINTS.size()-1 ], newPoint);
+            POLYGON_POINTS.push_back( newPoint );
+        } else cout << "Intersection found; Please try again"<< endl;
+}
 
 /*
  ============================   TESSELATION BLOCK BEGINS   ==================================
  */
 
-//Return bool representing whether or not the polygon was drawn in clock-wise fashion by the user
-//  Useful for knowing whether or not polygon list will need to be flipped in order to tesselate
+/**
+ * Check to see if the polygon drawn by user was drawn clockwise or not
+ */
 bool drawnClockWise( ) {
     
     double sum = 0;
     for( int x = 0; x < POLYGON_POINTS.size(); x++ ) {
         
-        double x1 = POLYGON_POINTS[ x ].headPoint[0];
-        double y1 = POLYGON_POINTS[ x ].headPoint[1];
-        double x2 = POLYGON_POINTS[ x + 1].headPoint[0];
-        double y2 = POLYGON_POINTS[ x + 1].headPoint[1];
+        double x1 = POLYGON_POINTS[ x ].point[0];
+        double y1 = POLYGON_POINTS[ x ].point[1];
+        double x2 = POLYGON_POINTS[ x + 1].point[0];
+        double y2 = POLYGON_POINTS[ x + 1].point[1];
         
-        //Last sum will be of last point in vector and original point
         if( x+1 == POLYGON_POINTS.size() ) {
-            x2 = POLYGON_POINTS[ 0 ].headPoint[0];
-            y2 = POLYGON_POINTS[ 0 ].headPoint[1];
+            x2 = POLYGON_POINTS[ 0 ].point[0];
+            y2 = POLYGON_POINTS[ 0 ].point[1];
         }
         
         sum += ( x2 - x1 ) * ( y2 + y1 );
@@ -242,64 +205,102 @@ bool drawnClockWise( ) {
     else         return false;
 }
 
-//This function will return a new vector that is the inverse of the original input vector.
-//  Function will be used when user drew a polygon in clockwise fashion so that tesselation
-//  can happen in counterclockwise fashion
-vector<polPoint> flipPolygonPoints( vector<polPoint> originalVec ){
+/**
+ * Flips designated vector but maintains starting vertex. Will be used in case of user-drawn polygon being clockwise
+ */
+vector<polPoint> flipPolygonPoints( vector<polPoint> const originalVec ){
     
     vector<polPoint> newVec;
     
-    while ( !originalVec.empty() ) {
-        newVec.push_back( originalVec[ originalVec.size()-1 ]);
-        originalVec.pop_back();
+    newVec.push_back( originalVec[0] );
+    for( int pos = (int) originalVec.size(); 1 < pos; pos-- ) {
+        newVec.push_back( originalVec[ pos-1 ] );
     }
     
     return newVec;
 }
 
+/**
+ * Intersection checker specifically for use during tesselation
+ */
 bool finishedPolygonIntersect( int firstPointIndex, int secondPointIndex, vector<polPoint> untouchedPoints ) {
     
     //1.    Check if point a, middle point, and point b are counterclockwise
     //      If counterclockwise proceed to next step. If not, report intersection
-    
-    //      1.a. function orientation returns:
-    //              2 if points are CCW
-    //              1 if points are CW
-    //              0 if points are colinear :: this should not be a problem since this should be checked for when drawing the polygon
-    if( orientation( untouchedPoints[ firstPointIndex ].headPoint,
-                    untouchedPoints[ firstPointIndex + 1 ].headPoint,
-                    untouchedPoints[ secondPointIndex ].headPoint) != 2 )
+    if( orientation( untouchedPoints[ firstPointIndex ].point,
+                    untouchedPoints[ firstPointIndex + 1 ].point,
+                    untouchedPoints[ secondPointIndex ].point) != 2 )
         return true;
     
-    //2.    Check to see if segment points a-->b intersect with any lines from the polygon
-    //      If they do intersect, make sure they are not adjacent lines
-    
-    //Is the middle point > 180? If so, then the line will go out of the polygon
-    if( getAngle(untouchedPoints[ firstPointIndex ].headPoint,
-                 untouchedPoints[ firstPointIndex + 1 ].headPoint,
-                 untouchedPoints[ secondPointIndex ].headPoint) > 180)
+    //2. Check to see if proposed line will go outside of the polygon
+    if( getAngle(untouchedPoints[ firstPointIndex ].point,
+                 untouchedPoints[ firstPointIndex + 1 ].point,
+                 untouchedPoints[ secondPointIndex ].point) > 180)
         return true;
     
-    
+    //3. Check for intersections
     for( int x = 0; x < untouchedPoints.size(); x++ ){
         
+        int xPlusOne = (x+1)%untouchedPoints.size();
+        
         //Check if line segments in question are adjacent
-        if( x != firstPointIndex && x + 1 != firstPointIndex &&
-           x != secondPointIndex && x + 1 != secondPointIndex )
-            
+        if( !isAdjacent(x, xPlusOne, firstPointIndex, secondPointIndex))
+
             //Lines are not adjacent, so check for intersection
-            if (  doesIntersect(  untouchedPoints[ x ].headPoint,                            //Hello
-                                untouchedPoints[ x + 1 ].headPoint,                          //Hello 
-                                untouchedPoints[ firstPointIndex ].headPoint,
-                                untouchedPoints[ secondPointIndex ].headPoint) )
+            if (  doesIntersect(  untouchedPoints[ x ].point,
+                                 untouchedPoints[ xPlusOne ].point,
+                                 untouchedPoints[ firstPointIndex ].point,
+                                 untouchedPoints[ secondPointIndex ].point) )
                 return true;
+        
     }
-    //No intersection was found
     return false;
 }
 
+/**
+ * Add new triangle
+ */
+void newTriangle( int indexP, int indexQ, int indexR, vector<polPoint> const vector ) {
+    triangle t;
+    t.p = vector[ indexP ];
+    t.q = vector[ indexQ ];
+    t.r = vector[ indexR ];
+    TRIANGLES.push_back( t );
+}
+
+/**
+ * Final steps to finishing tesselation. Called when there are 4 points left in polygon
+ */
+void fourTipFinish( vector<polPoint> v ) {
+    
+    //Finds midpoint of proposed line
+    double mp13[2];
+    midpoint( v[1].point, v[3].point, mp13);
+    
+    //Checks to make sure the midpoint is within the constraints of the polygon
+    if( (mp13[0] > v[0].point[0] && mp13[0] < v[2].point[0]
+        && mp13[1] < v[3].point[1] && mp13[1] > v[1].point[1])
+        ||
+       (mp13[0] > v[1].point[0] && mp13[0] < v[3].point[0]
+        && mp13[1] < v[0].point[1] && mp13[1] > v[2].point[1])){
+            
+            drawLine(v[1], v[3]);
+            newTriangle( 0,1,3,v );
+            newTriangle( 1,2,3,v );
+            
+        } else {
+            drawLine(v[0], v[2]);
+            newTriangle( 0,1,2,v );
+            newTriangle( 0,2,3,v );
+        }
+}
+
+/**
+ * Tesselate the user drawn polygon using ear-clipping method
+ */
 void tesselate( ) {
     
+    //Will be used for to maintain which points have not been clipped
     vector<polPoint> untouchedPoints;
     
     //If polygon was drawn clockwise, then flip the polygon points into the T_POLY list
@@ -307,84 +308,33 @@ void tesselate( ) {
         T_POLYGON_POINTS = flipPolygonPoints( POLYGON_POINTS ) ;
     else
         T_POLYGON_POINTS = POLYGON_POINTS;
-    untouchedPoints = T_POLYGON_POINTS;
     
-    //In the special case that there is a four point polygon, simply 'cut' it in half
-    if( untouchedPoints.size() == 4 ){
-        triangle t;
-        t.p = untouchedPoints[0];
-        t.q = untouchedPoints[1];
-        t.r = untouchedPoints[2];
-        TRIANGLES.push_back( t );
-        
-        triangle z;
-        z.p = untouchedPoints[0];
-        z.q = untouchedPoints[2];
-        z.r = untouchedPoints[3];
-        TRIANGLES.push_back( z );
-        
-        glBegin(GL_LINES);
-        glColor3f(1.0f, 0.0f, 1.0f);
-        glVertex2d(untouchedPoints[1].headPoint[0], untouchedPoints[1].headPoint[1]);
-        glVertex2d(untouchedPoints[3].headPoint[0], untouchedPoints[3].headPoint[1]);
-        glEnd();
-        glFlush();
-        return; 
-    }
+    untouchedPoints = T_POLYGON_POINTS;
     
     for( int x = 0; x < untouchedPoints.size(); x++ ){
         
+        //printPolPointVectors(untouchedPoints);
         int xPlusOne = (x+1)%untouchedPoints.size();
         int xPlusTwo = (x+2)%untouchedPoints.size();
         
-        cout << "TESSELATE RUN: " << x << endl;
-        cout << "UNTOUCHED POINTS: " << untouchedPoints.size() << endl;
-        //Continue tesselating until there remains only 3 points as that will be the final triangle
-        if ( untouchedPoints.size() == 3){
-            triangle t;
-            t.p = untouchedPoints[0];
-            t.q = untouchedPoints[1];
-            t.r = untouchedPoints[2];
-            TRIANGLES.push_back( t );
-            break; //add remaining 3 points to triangle vector
+        //In the special case that there is a four point polygon, simply 'cut' it in half
+        if( untouchedPoints.size() == 4 ){
+            fourTipFinish(untouchedPoints);
+            return;
         }
         
+        if( untouchedPoints.size() == 3 )
+        {
+            newTriangle(0, 1, 2, untouchedPoints);
+            return;
+        }
+  
         if( !finishedPolygonIntersect( x , xPlusTwo , untouchedPoints) ) {// point x and x+2 do not have an intersection
-            
-            //Draw line from point x and x+2
-            glBegin(GL_LINES);
-            glColor3f(1.0f, 0.0f, 1.0f);
-            glVertex2d(untouchedPoints[ x ].headPoint[ 0 ], untouchedPoints[ x ].headPoint[ 1 ]);
-            glVertex2d(untouchedPoints[ xPlusTwo ].headPoint[ 0 ], untouchedPoints[ xPlusTwo ].headPoint[ 1 ]);
-            glEnd();
-            glFlush();
-            
-            //Add point x, x+1, x+2 to the triangle list
-            triangle t;
-            t.p = untouchedPoints[x];
-            t.q = untouchedPoints[ xPlusOne ];
-            t.r = untouchedPoints[xPlusTwo];
-            TRIANGLES.push_back( t );
-            
-            //Remove point x+1 from untouched points
-            /*if( x + 1 == untouchedPoints.size())
-                untouchedPoints.erase(untouchedPoints.end());
-            else
-                untouchedPoints.erase( untouchedPoints.begin() + x + 1 );
-            cout << "Untouched polygon size: " << untouchedPoints.size() << endl;*/
-            
-            //Remove the 'ear' point of the triangle from considered tesselation points 
-            //auto last = remove(untouchedPoints.begin(), untouchedPoints.end(), untouchedPoints[xPlusOne]);
-            //untouchedPoints.erase(last, untouchedPoints.end());
-            
-            untouchedPoints.erase( untouchedPoints.begin() + xPlusOne );
-            
-            //Return x to 0 to continue ear-clipping algorithm
-            cout << "Resetting x" << endl;
-            x = 0;
+            drawLine( untouchedPoints[x], untouchedPoints[xPlusTwo] );
+            newTriangle(x, xPlusOne, xPlusTwo, untouchedPoints);
+            untouchedPoints.erase( untouchedPoints.begin() + xPlusOne );     //Remove the middle point of the triangle
+            x = 0;  //Return x to 0 to continue ear-clipping algorithm
         }
-        
-        //If there is an intersection, the for loop itself will continue the tesselation algorithm
         
     }//end of for-loop
 }
@@ -393,7 +343,9 @@ void tesselate( ) {
  ============================   TESSELATION BLOCK ENDING   ==================================
  */
 
-//Clears the screen and polygon points if user wants to restart drawing
+/**
+ * Clear the screen of everything and clear all stored data
+ */
 void clearScreen( ) {
     
     CAN_CONTINUE_DRAWING=true;
@@ -405,141 +357,140 @@ void clearScreen( ) {
 
 }
 
-//Returns the original line outline of the polygon
+/**
+ * Redraw the outline of the original polygon
+ */
 void getOriginalPolygon( ) {
     
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     TRIANGLES.clear();
-    T_POLYGON_POINTS.clear(); 
     
     for( int x = 0; x < POLYGON_POINTS.size(); x++ ) {
-        
-        int secondPointIndex = x + 1;
-        
-        //For the final point, to connect the final point of the polygon, modify the second point index back to the original point
-        if( secondPointIndex == POLYGON_POINTS.size() )
-            secondPointIndex = 0;
-        
-        //Draw the lines between all the points 
-        glBegin(GL_LINES);
-        glColor3f(1.0f, 0.0f, 1.0f);
-        glVertex2d( POLYGON_POINTS[ x ].headPoint[ 0 ], POLYGON_POINTS[ x ].headPoint[ 1 ] );
-        glVertex2d(POLYGON_POINTS[ secondPointIndex ].headPoint[ 0 ], POLYGON_POINTS[ secondPointIndex ].headPoint[ 1 ]);
-        glEnd();
-        
-    } glFlush();
-}
 
-//Quick little function to display text on the screen
-void displayText( float x, float y, const char *string ) {
-    size_t j = strlen( string );
-    
-    glColor3f( 1.0, 0.0, 0.0 );
-    glRasterPos2f( x, y );
-    for( int i = 0; i < j; i++ ) {
-        glutBitmapCharacter( GLUT_BITMAP_TIMES_ROMAN_24, string[i] );
+        int secondPointIndex = (x+1)%POLYGON_POINTS.size();
+        drawLine( POLYGON_POINTS[x], POLYGON_POINTS[secondPointIndex]);
+        
     }
 }
 
-//Fills a tesselated polygon
+/**
+ * Fill all triangles of a tesselated polygon
+ */
 void fillPolygonT( ) {
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    
+    if( TRIANGLES.empty() )
+        tesselate();
+    
     glBegin(GL_TRIANGLES);
     for( int x = 0; x < TRIANGLES.size(); x ++ ) {
-        glVertex2d(TRIANGLES[x].p.headPoint[0], TRIANGLES[x].p.headPoint[1]);
-        glVertex2d(TRIANGLES[x].q.headPoint[0], TRIANGLES[x].q.headPoint[1]);
-        glVertex2d(TRIANGLES[x].r.headPoint[0], TRIANGLES[x].r.headPoint[1]);
+        glVertex2d(TRIANGLES[x].p.point[0], TRIANGLES[x].p.point[1]);
+        glVertex2d(TRIANGLES[x].q.point[0], TRIANGLES[x].q.point[1]);
+        glVertex2d(TRIANGLES[x].r.point[0], TRIANGLES[x].r.point[1]);
     }
     glEnd();
     glFlush();
 }
 
-//Fills an un-tesselated polygon
+/**
+ * Fill polygon consisting of vertices
+ */
 void fillPolygon( ) {
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glBegin(GL_POLYGON);
     for (int x = 0; x < POLYGON_POINTS.size(); x++)
-        glVertex2d(POLYGON_POINTS[ x ].headPoint[ 0 ], POLYGON_POINTS[ x ].headPoint[ 1 ] );
+        glVertex2d(POLYGON_POINTS[ x ].point[ 0 ], POLYGON_POINTS[ x ].point[ 1 ] );
     glEnd();
     glFlush();
 }
 
+/**
+ * Sums the area of all triangles
+ */
+void findArea( vector<triangle> t){
+    
+    double seg1[3];
+    double seg2[3];
+    double totalSum = 0;
+    
+    for( int x = 0; x < TRIANGLES.size(); x++ ){
+        
+        seg1[0] = TRIANGLES[x].q.point[0] - TRIANGLES[x].p.point[0];
+        seg1[1] = TRIANGLES[x].q.point[1] - TRIANGLES[x].p.point[1];
+        seg1[2] = 0; //Because we are dealing with only 2 dimensions
+        seg2[0] = TRIANGLES[x].r.point[0] - TRIANGLES[x].p.point[0];
+        seg2[1] = TRIANGLES[x].r.point[1] - TRIANGLES[x].p.point[1];
+        seg2[2] = 0;
+        
+        //Calculate only z-component (since we are in the 2D)
+        double zComp = (seg1[0] * seg2[1]) - (seg2[0] * seg1[1]);
+        double localTriArea = (.5)*(abs(zComp));
+        cout << "Triangle " << x+1 << " has an area of: " << localTriArea << endl;
+        totalSum +=  localTriArea;
+    }
+    cout << "Total polygon area: " << totalSum << endl;
+    
+}
+
+/**
+ * Draw the final line of a polygon to close it off
+ */
 void closePolygon( int x, int y )
 {
-    //If there are enough points to close a polygon
     if( POLYGON_POINTS.size() > 2){
         
-        //Check to see if the closing line would intersect with the existing polygon
-        double Prospective_New_Point[] = { POLYGON_POINTS[0].headPoint[0],
-                                        POLYGON_POINTS[0].headPoint[1] } ;
+        double Prospective_New_Point[] = { POLYGON_POINTS[0].point[0],
+                                        POLYGON_POINTS[0].point[1] } ;
         
-        if( closePolygonIntersect(Prospective_New_Point[0] , Prospective_New_Point[1]) == false ) {
-          
-        //Draw closing line
-        glBegin(GL_LINES);
-        glColor3f(1.0f, 0.0f, 1.0f);
-        // the last point drawn by user
-        glVertex2d(POLYGON_POINTS[ POLYGON_POINTS.size()-1 ].headPoint[0],
-                   POLYGON_POINTS[ POLYGON_POINTS.size()-1 ].headPoint[1]);
-        //the original point drawn by user
-        glVertex2d(POLYGON_POINTS[0].headPoint[0],
-                   POLYGON_POINTS[0].headPoint[1]);
-        glEnd();
-        glFlush();
-            
-        } else { cout << "CLOSE POLYGON INTERSECTS: TRY AGAIN " << endl; }//end of nested if-statement
-    }//end of first if-statement
+        if( !closePolygonIntersect(Prospective_New_Point[0] , Prospective_New_Point[1]) ){
+                  printf ("Point accepted: %d   %d\n", x, WINDOW_MAX_Y-y);
+                  drawLine( POLYGON_POINTS[ POLYGON_POINTS.size()-1 ], POLYGON_POINTS[0] );
+                  CAN_CONTINUE_DRAWING=false;
+        }
+        
+    }
 }
 
-void STATUS( ) {
-    cout << "POLYGON_POINTS Size: " << POLYGON_POINTS.size() << endl;
-    cout << "T_POLYGON Size: " << T_POLYGON_POINTS.size() << endl;
-    cout << "TRIANGLES Size: " << TRIANGLES.size() << endl;
-}
-
+/**
+ * Acts as the listener interface for mouse commands
+ */
 void mouse( int button, int state, int x, int y )
 {
     
     if ( button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN )
-    {
-        printf ("%d   %d\n", x, WINDOW_MAX_Y-y);
-        if( CAN_CONTINUE_DRAWING == true ) newPoint( x, WINDOW_MAX_Y-y );
-    }
+        if( CAN_CONTINUE_DRAWING ){
+            printf ("Point accepted: %d   %d\n", x, WINDOW_MAX_Y-y);
+            newPoint( x, WINDOW_MAX_Y-y );
+        }
     
     if ( button == GLUT_LEFT_BUTTON && state == GLUT_DOWN )
-    {
-        printf ("%d   %d\n", x, WINDOW_MAX_Y-y);
         closePolygon( x, WINDOW_MAX_Y-y );
-        CAN_CONTINUE_DRAWING=false;
-    }
     
     if ( button == GLUT_MIDDLE_BUTTON && state == GLUT_DOWN )
-    {
-        printf ("%d   %d\n", x, WINDOW_MAX_Y-y);
         clearScreen();
-    }
 }
 
-//Assign commands to certain keys
+/**
+ *Assign commands to certain keys
+ */
 void keyboard( unsigned char key, int x, int y )
 {
     if ( key == 'q' || key == 'Q' ) exit(0);
-    if ( key == 'c' || key == 'C' ) {clearScreen(); cout << "Post-Clear Screen: " << endl; STATUS(); }
-    if ( key == 't' || key == 'T' ) { tesselate(); cout << "Post-Tessetlation: " << drawnClockWise() << endl; STATUS(); }
-    if ( key == 'i' || key == 'I' ) { getOriginalPolygon(); cout << "Post Return to Original: " << endl; STATUS(); }
+    if ( key == 'c' || key == 'C' ) clearScreen();
+    if ( key == 'i' || key == 'I' ) getOriginalPolygon();
     if ( key == 'f' || key == 'F' ) fillPolygon();
-    if ( key == 'h' || key == 'H' ) fillPolygonT(); 
+    if ( key == 'p' || key == 'P' ) fillPolygonT();
+    if ( key == 't' || key == 'T' ) {
+        tesselate();
+        findArea(TRIANGLES);
+    }
 }
 
 
-
-int main(int argc, char** argv)
-{
-    
+int main(int argc, char** argv) {
     myglutInit(argc,argv); //Set up Window
     myInit(); /* set attributes */
-    
-    
     // Now start the standard OpenGL glut callbacks //
-    
     
     glutMouseFunc(mouse);  /* Define Mouse Handler */
     glutKeyboardFunc(keyboard); /* Define Keyboard Handler */
