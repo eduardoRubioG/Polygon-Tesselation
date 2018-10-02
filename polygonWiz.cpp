@@ -425,7 +425,7 @@ void findArea( vector<triangle> t){
         
         //Calculate only z-component (since we are in the 2D)
         double zComp = (seg1[0] * seg2[1]) - (seg2[0] * seg1[1]);
-        double localTriArea = (.5)*(abs(zComp));
+        double localTriArea = (.5)*(fabs(zComp));
         cout << "Triangle " << x+1 << " has an area of: " << localTriArea << endl;
         totalSum +=  localTriArea;
     }
