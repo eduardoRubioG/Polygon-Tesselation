@@ -10,7 +10,7 @@
 #include <vector>
 #include <algorithm>
 #include <math.h>
-
+using namespace std; 
 /*
  PRE-CONDITION:
  Input to vectors to take cross product and store resulting vector into <resultingVector>
@@ -32,7 +32,10 @@ void crossProd( std::vector<Object> const& a, std::vector<Object> const& b, std:
  */
 template <class Object>
 double dotProd( std::vector<Object> const& a, std::vector<Object> const& b  ) {
-    if (a.size() != b.size()) { throw std::runtime_error("DOT PRODUCT ERROR: Vectors different sizes"); }
+    if (a.size() != b.size()){ 
+        cout << "Dot Product Error: Vectors are different sizes" << endl; 
+        return; 
+    }
     double DOT_PRODUCT = 0;
     for( int x = 0; x < a.size()-1; x++ )
         DOT_PRODUCT += (a[x])*(b[x]);
