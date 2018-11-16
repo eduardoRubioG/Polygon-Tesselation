@@ -2,13 +2,17 @@
 // Started by Eduardo Rubio on 9/18/18
 #include <stdio.h>
 //Linux Headers
+#ifdef LINUX
 #include <GL/glut.h>
+#endif
 
-/*Mac headers
+//Mac headers
+#ifdef OSX
 #include <OpenGL/gl.h>
 #include <OpenGl/glu.h>
 #include <GLUT/glut.h>
-*/
+#endif 
+
 #include <stdlib.h>
 #include <vector>
 #include "GraphxMath.h"
